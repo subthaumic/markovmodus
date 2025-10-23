@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "markovmodus"
+version = "0.1.0"
+description = "Markov-modulated ODE simulator for synthetic single-cell splicing datasets."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "Michael Bleher" }
+]
+keywords = [
+  "single-cell",
+  "rna",
+  "simulation",
+  "markov",
+  "splicing",
+]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+  "numpy>=1.23",
+  "pandas>=2.0",
+  "anndata>=0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2",
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.1.8",
+  "mypy>=1.5",
+  "sphinx>=7.2",
+  "myst-parser>=2.0",
+  "furo>=2024.5.27",
+  "pre-commit>=3.7",
+  "twine>=4.0",
+]
+test = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+]
+docs = [
+  "sphinx>=7.2",
+  "sphinx-autobuild>=2021.3.14",
+  "myst-parser>=2.0",
+  "furo>=2024.5.27",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+ignore = ["D203"]
+
+[tool.ruff.lint.per-file-ignores]
+"README.md" = ["D"]
+
+[project.urls]
+Homepage = "https://github.com/subthaumic/markovmodus"
+Repository = "https://github.com/subthaumic/markovmodus"
+Issues = "https://github.com/subthaumic/markovmodus/issues"
+Changelog = "https://subthaumic.github.io/markovmodus/changelog.html"
+Documentation = "https://subthaumic.github.io/markovmodus/"
+
+[tool.hatch.build]
+exclude = [
+  "tests",
+  ".github",
+  "misc.md",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/markovmodus"]
+include = [
+  "LICENSE",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/markovmodus",
+  "README.md",
+  "LICENSE",
+  "pyproject.toml",
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "docs",
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "--strict-markers --disable-warnings -ra"
+[tool.ruff.format]
+docstring-code-line-length = 100
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_configs = true

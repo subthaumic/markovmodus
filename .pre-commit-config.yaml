@@ -1,0 +1,43 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.7
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        files: "^((?!notebooks/).)*$"
+      - id: ruff-format
+        files: "^((?!notebooks/).)*$"
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: []
+        pass_filenames: true
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: ./.conda/bin/python -m pytest
+        language: system
+        pass_filenames: false
+      - id: sphinx-build
+        name: sphinx-build
+        entry: ./.conda/bin/sphinx-build -b html docs docs/_build/html -W --keep-going
+        language: system
+        pass_filenames: false
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.7.1
+    hooks:
+      - id: nbstripout
+        args:
+          - "--extra-keys"
+          - "metadata.kernelspec metadata.language_info"

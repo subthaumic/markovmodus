@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "markovmodus"
+abstract: >
+  markovmodus generates synthetic single-cell RNA sequencing snapshot datasets with paired
+  unspliced and spliced counts. A continuous-time Markov process modulates state-specific
+  splicing dynamics, enabling benchmarking of trajectory inference and RNA velocity methods.
+version: "0.1.0"
+date-released: 2025-10-23
+repository-code: "https://github.com/subthaumic/markovmodus"
+url: "https://subthaumic.github.io/markovmodus/"
+license: MIT
+type: software
+authors:
+  - family-names: "Bleher"
+    given-names: "Michael"
+    affiliation: "subthaumic"
