@@ -51,7 +51,11 @@ def simulation_to_anndata(output: SimulationOutput) -> ad.AnnData:
     adata.layers["spliced"] = spliced
 
     adata.uns["simulation_params"] = output.parameters.to_metadata()
-    adata.uns["transition_matrix"] = output.transition_matrix.tolist()
+    adata.uns["transition_rate_mode"] = output.transition_rate_mode
+    if output.transition_rates is not None:
+        adata.uns["transition_rates"] = output.transition_rates.tolist()
+        # Deprecated compatibility key; prefer ``transition_rates``.
+        adata.uns["transition_matrix"] = output.transition_rates.tolist()
     adata.uns["state_expression"] = output.state_expression.tolist()
     adata.uns["timepoint"] = output.timepoint
 

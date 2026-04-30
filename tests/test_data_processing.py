@@ -29,6 +29,9 @@ def test_io_conversions_round_trip():
     assert adata.n_vars == params.num_genes
     np.testing.assert_array_equal(adata.layers["unspliced"], output.unspliced)
     np.testing.assert_array_equal(adata.layers["spliced"], output.spliced)
+    assert adata.uns["transition_rate_mode"] == "static"
+    assert "transition_rates" in adata.uns
+    assert "transition_matrix" in adata.uns
 
 
 def test_write_output_h5ad(tmp_path: Path):
@@ -51,6 +54,26 @@ def test_write_output_h5ad(tmp_path: Path):
     assert loaded.n_obs == params.num_cells
     assert "unspliced" in loaded.layers
     assert "spliced" in loaded.layers
+
+
+def test_dynamic_transition_rates_metadata():
+    params = SimulationParameters(
+        num_states=2,
+        num_genes=4,
+        num_cells=5,
+        t_final=1.0,
+        dt=0.5,
+        markers_per_state=2,
+        transition_rates=lambda state: np.zeros((2, 2)),
+        rng_seed=101,
+    )
+
+    output = simulate_population(params)
+    adata = simulation_to_anndata(output)
+
+    assert adata.uns["transition_rate_mode"] == "dynamic"
+    assert "transition_rates" not in adata.uns
+    assert "transition_matrix" not in adata.uns
 
 
 def test_write_output_invalid_format(tmp_path: Path):

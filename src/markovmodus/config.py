@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, Optional, Sequence
+from dataclasses import dataclass, field, fields
+from typing import Any, Callable, Dict, Optional, Sequence, TypeAlias
+import warnings
 
 import numpy as np
+
+TransitionRateSpec: TypeAlias = np.ndarray | Callable[[Any], np.ndarray]
 
 
 def _normalise_probabilities(probs: Optional[Sequence[float]], size: int) -> np.ndarray:
@@ -23,10 +26,12 @@ def _normalise_probabilities(probs: Optional[Sequence[float]], size: int) -> np.
     return array / total
 
 
-def _ensure_square_matrix(matrix: np.ndarray, size: int) -> np.ndarray:
+def _ensure_square_matrix(
+    matrix: np.ndarray, size: int, *, name: str = "transition_rates"
+) -> np.ndarray:
     """Validate that a matrix is square with the requested size."""
     if matrix.shape != (size, size):
-        raise ValueError(f"transition_matrix must have shape ({size}, {size})")
+        raise ValueError(f"{name} must have shape ({size}, {size})")
     return matrix
 
 
@@ -47,9 +52,13 @@ class SimulationParameters:
         Duration of the simulation window.
     dt:
         Integration time-step for the Euler-Maruyama style updates.
+    transition_rates:
+        Optional continuous-time rate matrix or callable returning transition rates for the current
+        simulation state. Static matrices must have strictly non-negative off-diagonals and a zero
+        diagonal. When omitted a dense complete graph is constructed with
+        ``default_transition_rate``.
     transition_matrix:
-        Optional continuous-time rate matrix (strictly non-negative off-diagonals, zero diagonal).
-        When omitted a dense complete graph is constructed with ``default_transition_rate``.
+        Deprecated alias for ``transition_rates``. It will be removed in a future release.
     default_transition_rate:
         Rate used for all off-diagonal entries of the default complete graph.
     baseline_expression:
@@ -81,6 +90,7 @@ class SimulationParameters:
     num_cells: int
     t_final: float
     dt: float = 1.0
+    transition_rates: Optional[TransitionRateSpec] = None
     transition_matrix: Optional[np.ndarray] = None
     default_transition_rate: float = 0.05
     baseline_expression: float = 2.0
@@ -119,11 +129,27 @@ class SimulationParameters:
         if self.decay_rate <= 0:
             raise ValueError("decay_rate must be positive")
 
+        if self.transition_rates is not None and self.transition_matrix is not None:
+            raise ValueError("Provide either transition_rates or transition_matrix, not both")
+
         if self.transition_matrix is not None:
-            matrix = _ensure_square_matrix(
-                np.asarray(self.transition_matrix, dtype=float), self.num_states
+            warnings.warn(
+                "transition_matrix is deprecated; use transition_rates instead.",
+                DeprecationWarning,
+                stacklevel=2,
             )
-            self.transition_matrix = self._sanitise_transition_matrix(matrix)
+            self.transition_rates = self.transition_matrix
+
+        if self.transition_rates is not None and not callable(self.transition_rates):
+            matrix = _ensure_square_matrix(
+                np.asarray(self.transition_rates, dtype=float),
+                self.num_states,
+                name="transition_rates",
+            )
+            self.transition_rates = self._sanitise_transition_rates(matrix)
+
+        if self.transition_matrix is not None:
+            self.transition_matrix = np.asarray(self.transition_rates, dtype=float).copy()
 
         if self.state_expression is not None:
             self.state_expression = self._validate_state_expression(
@@ -138,8 +164,10 @@ class SimulationParameters:
             self.initial_state_probs, self.num_states
         )
 
-    def _sanitise_transition_matrix(self, matrix: np.ndarray) -> np.ndarray:
+    def _sanitise_transition_rates(self, matrix: np.ndarray) -> np.ndarray:
         """Clip negative rates and enforce a zero diagonal."""
+        if not np.all(np.isfinite(matrix)):
+            raise ValueError("transition_rates must contain only finite values")
         cleaned = np.clip(matrix, a_min=0.0, a_max=None)
         np.fill_diagonal(cleaned, 0.0)
         return cleaned
@@ -164,16 +192,35 @@ class SimulationParameters:
         """Return the cached initial state distribution."""
         return self._resolved_initial_probs
 
-    def resolve_transition_matrix(self) -> np.ndarray:
-        """Return a dense transition matrix consistent with the configuration."""
-        if self.transition_matrix is not None:
-            return self.transition_matrix.copy()
+    def resolve_transition_rates(self) -> TransitionRateSpec:
+        """Return the configured transition rates or a default dense rate matrix."""
+        if self.transition_rates is not None:
+            if callable(self.transition_rates):
+                return self.transition_rates
+            return self.transition_rates.copy()
 
         matrix = np.full(
             (self.num_states, self.num_states), self.default_transition_rate, dtype=float
         )
         np.fill_diagonal(matrix, 0.0)
         return matrix
+
+    def resolve_transition_matrix(self) -> np.ndarray:
+        """Return static transition rates as a dense matrix.
+
+        Deprecated
+        ----------
+        Use :meth:`resolve_transition_rates` instead.
+        """
+        warnings.warn(
+            "resolve_transition_matrix() is deprecated; use resolve_transition_rates() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        rates = self.resolve_transition_rates()
+        if callable(rates):
+            raise ValueError("Dynamic transition_rates do not resolve to a static matrix")
+        return rates
 
     def resolve_state_expression(self, rng: np.random.Generator) -> np.ndarray:
         """Return a state-by-gene steady-state expression matrix."""
@@ -192,9 +239,17 @@ class SimulationParameters:
 
     def to_metadata(self) -> Dict[str, Any]:
         """Convert parameters into a JSON-serialisable dictionary."""
-        data = asdict(self)
-        # Remove cached field
-        data.pop("_resolved_initial_probs", None)
+        data: Dict[str, Any] = {}
+
+        for item in fields(self):
+            key = item.name
+            if key in {"_resolved_initial_probs", "transition_matrix"}:
+                continue
+            value = getattr(self, key)
+            if key == "transition_rates" and callable(value):
+                data[key] = "<callable>"
+                continue
+            data[key] = value
 
         # Convert arrays to lists for JSON serialisation
         for key, value in list(data.items()):

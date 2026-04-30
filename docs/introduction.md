@@ -17,8 +17,8 @@ continuous-time Markov process and directly influence transcriptional dynamics.
 
 ## How it works
 
-1. Define the latent state graph, either via a custom transition matrix or by
-   relying on the default fully connected graph.
+1. Define the latent state graph, either via custom static or dynamic transition
+   rates or by relying on the default fully connected graph.
 2. Configure transcription and splicing parameters: set global splicing/decay rates,
    and tune per-state steady-state expression profiles (including marker reuse controls).
 3. Simulate cells by sampling paths through the latent graph and recording a

@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - No changes yet.
 
+## [0.2.0] - 2026-04-30
+
+### Added
+- Dynamic ``transition_rates`` support via ``SimulationState`` callbacks.
+- ``Simulation`` engine class for stepwise simulation state management.
+
+### Deprecated
+- ``transition_matrix`` in favour of ``transition_rates``.
+
 
 ## [0.1.0] - 2025-10-23
 
@@ -20,5 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation site with usage guide and API reference.
 
 
-[unreleased]: https://github.com/subthaumic/markovmodus/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/subthaumic/markovmodus/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/subthaumic/markovmodus/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/subthaumic/markovmodus/releases/tag/v0.1.0

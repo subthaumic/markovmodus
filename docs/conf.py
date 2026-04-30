@@ -11,7 +11,7 @@ project = "markovmodus"
 author = "markovmodus developers"
 year = datetime.utcnow().year
 copyright = f"{year}, {author}"
-release = "0.1.0"
+release = "0.2.0"
 
 extensions = [
     "sphinx.ext.autodoc",

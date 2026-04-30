@@ -36,8 +36,71 @@ def test_invalid_positive_parameters():
 
 
 def test_transition_matrix_shape_validation():
-    with pytest.raises(ValueError):
+    with pytest.warns(DeprecationWarning), pytest.raises(ValueError):
         SimulationParameters(**base_kwargs(), transition_matrix=np.ones((2, 2)))
+
+
+def test_transition_rates_shape_validation():
+    with pytest.raises(ValueError):
+        SimulationParameters(**base_kwargs(), transition_rates=np.ones((2, 2)))
+
+
+def test_transition_rates_finite_validation():
+    matrix = np.zeros((3, 3))
+    matrix[0, 1] = np.inf
+
+    with pytest.raises(ValueError):
+        SimulationParameters(**base_kwargs(), transition_rates=matrix)
+
+
+def test_transition_matrix_deprecated_alias():
+    matrix = np.array(
+        [
+            [0.0, 0.2, 0.0],
+            [0.0, 0.0, 0.4],
+            [0.1, 0.0, 0.0],
+        ]
+    )
+
+    with pytest.warns(DeprecationWarning):
+        params = SimulationParameters(**base_kwargs(), transition_matrix=matrix)
+
+    assert np.array_equal(params.resolve_transition_rates(), matrix)
+
+
+def test_transition_rates_and_matrix_are_mutually_exclusive():
+    with pytest.raises(ValueError):
+        SimulationParameters(
+            **base_kwargs(),
+            transition_rates=np.zeros((3, 3)),
+            transition_matrix=np.zeros((3, 3)),
+        )
+
+
+def test_callable_transition_rates_accepted_and_serialised():
+    def dynamic_rates(state):
+        return np.zeros((3, 3))
+
+    params = SimulationParameters(**base_kwargs(), transition_rates=dynamic_rates)
+
+    assert params.resolve_transition_rates() is dynamic_rates
+    assert params.to_metadata()["transition_rates"] == "<callable>"
+
+
+def test_deprecated_resolve_transition_matrix_warns():
+    params = SimulationParameters(**base_kwargs())
+
+    with pytest.warns(DeprecationWarning):
+        matrix = params.resolve_transition_matrix()
+
+    assert matrix.shape == (3, 3)
+
+
+def test_deprecated_resolve_transition_matrix_rejects_dynamic_rates():
+    params = SimulationParameters(**base_kwargs(), transition_rates=lambda state: np.zeros((3, 3)))
+
+    with pytest.warns(DeprecationWarning), pytest.raises(ValueError):
+        params.resolve_transition_matrix()
 
 
 def test_initial_state_probs_validation():

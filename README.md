@@ -41,13 +41,30 @@ Because the simulator records the exact state graph, you can stress-test algorit
 
 ## Transition Graph Configuration
 - Default behaviour uses a **fully connected graph** with a uniform jump rate set via ``SimulationParameters.default_transition_rate`` (falls back to `0.05` if omitted).
-- Provide an explicit ``transition_matrix`` (shape n-by-n, zero diagonal) for arbitrary directed rates; the simulator samples next states proportional to the row's off-diagonal rates.
+- Provide explicit static ``transition_rates`` (shape n-by-n, zero diagonal) for arbitrary directed rates; the simulator samples next states proportional to the row's off-diagonal rates.
 - Example:
   ```python
   custom = np.full((n, n), 0.05, dtype=float)
   np.fill_diagonal(custom, 0.0)
-  params = SimulationParameters(..., transition_matrix=custom)
+  params = SimulationParameters(..., transition_rates=custom)
   ```
+- ``transition_matrix`` remains available as a deprecated alias for ``transition_rates``.
+- For time- or state-dependent rates, pass a callable that receives a ``SimulationState``:
+  ```python
+  import numpy as np
+  from markovmodus import SimulationParameters, SimulationState
+
+  def rates(state: SimulationState) -> np.ndarray:
+      custom = np.zeros((3, 3), dtype=float)
+      custom[0, 1] = 0.02 if state.time < 10.0 else 0.2
+
+      counts = np.bincount(state.cell_states, minlength=3)
+      custom[1, 2] = 0.01 + 0.001 * counts[1]
+      return custom
+
+  params = SimulationParameters(..., num_states=3, transition_rates=rates)
+  ```
+- The latent-state process uses a fixed-``dt`` discretized CTMC approximation rather than exact Gillespie simulation. Dynamic rates are evaluated at the start of each time step and held constant for that step.
 
 ## Getting Started
 
@@ -94,6 +111,7 @@ Start with the [Introduction](https://subthaumic.github.io/markovmodus/introduct
 
 ## Example notebooks
 Interactive walkthroughs live in [`notebooks/`](notebooks/). Open them locally in Jupyter or your favourite notebook environment to explore model configuration and downstream analysis patterns.
+The `time_dependent_transition_rates.ipynb` notebook demonstrates dynamic transition rates driven by `SimulationState.time` and the current latent cell-state distribution.
 
 
 ## License
