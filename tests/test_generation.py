@@ -14,6 +14,7 @@ def make_params() -> SimulationParameters:
         t_final=1.5,
         dt=0.5,
         markers_per_state=4,
+        marker_overlap=1,
         marker_expression=7.5,
         baseline_expression=1.2,
         rng_seed=123,

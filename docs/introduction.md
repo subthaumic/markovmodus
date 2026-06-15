@@ -17,12 +17,14 @@ continuous-time Markov process and directly influence transcriptional dynamics.
 
 ## How it works
 
-1. Define the latent state graph, either via custom static or dynamic transition
-   rates or by relying on the default fully connected graph.
+1. Define the latent state graph via custom static or dynamic transition rates.
 2. Configure transcription and splicing parameters: set global splicing/decay rates,
-   and tune per-state steady-state expression profiles (including marker reuse controls).
-3. Simulate cells by sampling paths through the latent graph and recording a
-   snapshot of unspliced/spliced counts, optionally adding negative-binomial noise via ``dispersion`` for realistic over-dispersion.
+   and tune per-state steady-state spliced-count targets (including marker reuse controls).
+3. Simulate cells with fixed-time-step stochastic updates. In each step, dynamic callbacks see the
+   current `SimulationState`, U/S counts are updated, cells may divide if a `proliferation_model`
+   is configured and non-dividing cells sample latent Markov transitions.
+4. Return final-time unspliced/spliced counts, optionally adding negative-binomial measurement
+   noise via ``dispersion`` for realistic over-dispersion.
 
 The rest of the documentation covers day-to-day usage (`usage.rst`), the full
 API reference (`api.rst`) and the changelog (`changelog.md`).

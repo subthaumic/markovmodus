@@ -25,6 +25,10 @@ def simulate_dataset(
     """
     Run a simulation and return the requested representation.
 
+    The default return type is AnnData with raw spliced counts in ``X`` and raw paired U/S counts
+    in ``layers["unspliced"]`` and ``layers["spliced"]``. Set ``output="dataframe"`` for a wide
+    pandas table or ``output="both"`` to receive both views.
+
     Parameters
     ----------
     params:

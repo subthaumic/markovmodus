@@ -10,4 +10,4 @@ from .config import SimulationParameters
 from .simulation import Simulation, SimulationState
 
 __all__ = ["simulate_dataset", "Simulation", "SimulationParameters", "SimulationState"]
-__version__ = "0.2.0"
+__version__ = "0.3.0"

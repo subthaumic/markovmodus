@@ -11,13 +11,17 @@ from .simulation import SimulationOutput
 
 
 def simulation_to_dataframe(output: SimulationOutput) -> pd.DataFrame:
-    """Convert a simulation result into a wide (cell x feature) pandas DataFrame."""
+    """Convert a simulation result into a wide cell-by-feature pandas DataFrame."""
     num_cells, num_genes = output.unspliced.shape
     gene_names = output.parameters.gene_names
 
     data = {
         "time": np.full(num_cells, output.timepoint, dtype=float),
         "state": output.states.astype(int),
+        "birth_parent": output.birth_parent.astype(int),
+        "birth_time": output.birth_time.astype(float),
+        "generation": output.generation.astype(int),
+        "last_division_time": output.last_division_time.astype(float),
     }
 
     for gene_idx in range(num_genes):
@@ -30,15 +34,23 @@ def simulation_to_dataframe(output: SimulationOutput) -> pd.DataFrame:
 
 
 def simulation_to_anndata(output: SimulationOutput) -> ad.AnnData:
-    """Convert a simulation result into an AnnData object."""
+    """
+    Convert a simulation result into an AnnData object.
+
+    ``X`` contains raw spliced counts for single-cell tooling conventions. Raw paired U/S counts
+    are also stored in ``layers["unspliced"]`` and ``layers["spliced"]``.
+    """
     unspliced, spliced = output.as_arrays()
-    combined = unspliced + spliced
 
     obs = pd.DataFrame(
         {
             "cell_id": [f"cell_{i}" for i in range(output.states.size)],
             "state": output.states.astype(int),
             "time": np.full(output.states.size, output.timepoint, dtype=float),
+            "birth_parent": output.birth_parent.astype(int),
+            "birth_time": output.birth_time.astype(float),
+            "generation": output.generation.astype(int),
+            "last_division_time": output.last_division_time.astype(float),
         }
     )
     obs = obs.set_index("cell_id")
@@ -46,7 +58,7 @@ def simulation_to_anndata(output: SimulationOutput) -> ad.AnnData:
     gene_names = output.parameters.gene_names
     var = pd.DataFrame({"gene_id": gene_names}).set_index("gene_id")
 
-    adata = ad.AnnData(X=combined, obs=obs, var=var)
+    adata = ad.AnnData(X=spliced, obs=obs, var=var)
     adata.layers["unspliced"] = unspliced
     adata.layers["spliced"] = spliced
 
@@ -54,8 +66,6 @@ def simulation_to_anndata(output: SimulationOutput) -> ad.AnnData:
     adata.uns["transition_rate_mode"] = output.transition_rate_mode
     if output.transition_rates is not None:
         adata.uns["transition_rates"] = output.transition_rates.tolist()
-        # Deprecated compatibility key; prefer ``transition_rates``.
-        adata.uns["transition_matrix"] = output.transition_rates.tolist()
     adata.uns["state_expression"] = output.state_expression.tolist()
     adata.uns["timepoint"] = output.timepoint
 
